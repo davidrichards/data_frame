@@ -11,7 +11,7 @@ begin
     s.authors = ["David Richards"]
     s.add_dependency('activesupport')
     s.add_dependency('davidrichards-just_enumerable_stats')
-    s.add_dependency('faster_csv')
+    s.add_dependency('fastercsv')
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"

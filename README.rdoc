@@ -55,9 +55,9 @@ sudo gem install davidrichards-data_frame
 
 === Dependencies
 
-* ActiveSupport: sudo gem install active_support
+* ActiveSupport: sudo gem install activesupport
 * JustEnumerableStats: sudo gem install davidrichards-just_enumerable_stats
-* FasterCSV: sudo gem install faster_csv
+* FasterCSV: sudo gem install fastercsv
 
 ==COPYRIGHT
 
