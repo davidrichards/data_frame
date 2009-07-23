@@ -9,7 +9,7 @@ begin
     s.homepage = "http://github.com/davidrichards/data_frame"
     s.description = "Data Frames with memoized transpose"
     s.authors = ["David Richards"]
-    s.add_dependency('active_support')
+    s.add_dependency('activesupport')
     s.add_dependency('davidrichards-just_enumerable_stats')
     s.add_dependency('faster_csv')
   end
