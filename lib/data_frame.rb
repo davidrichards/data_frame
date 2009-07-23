@@ -18,6 +18,17 @@ require 'data_frame/transposable_array'
 class DataFrame
   
   class << self
+    
+    # This is the neatest part of this neat gem.
+    # DataFrame.from_csv can be called in a lot of ways:
+    # DataFrame.from_csv(csv_contents)
+    # DataFrame.from_csv(filename)
+    # DataFrame.from_csv(url)
+    # If you need to define converters for FasterCSV, do it before calling
+    # this method: 
+    # FasterCSV::Converters[:special] = lambda{|f| f == 'foo' ? 'bar' : 'foo'}
+    # DataFrame.from_csv('http://example.com/my_special_url.csv', :converters => :special)
+    # This returns bar where 'foo' was found and 'foo' everywhere else.
     def from_csv(obj, opts={})
       labels, table = infer_csv_contents(obj)
       return nil unless labels and table

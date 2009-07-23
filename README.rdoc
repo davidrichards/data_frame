@@ -1,0 +1,64 @@
+== Data Frame
+
+This is a general data frame.  Load arrays and labels into it, and you will have a very powerful set of tools on your data set.
+
+==Usage
+
+  df = DataFrame.from_csv('http://archive.ics.uci.edu/ml/machine-learning-databases/forest-fires/forestfires.csv')
+  df.labels
+  # => [:x, :y, :month, :day, :ffmc, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]
+  df.dmc
+  # => [26.2, 35.4, 43.7, 33.3, 51.3, 85.3,...]
+  df.dmc.max
+  # => 291.3
+  df.dmc.min
+  # => 1.1
+  df.dmc.mean
+  # => 110.872340425532
+  df.dmc.std
+  # => 64.0464822492543
+  df = DataFrame.new(:list, :of, :things)    
+  # => #<DataFrame:0x24ec6e8 @items=[], @labels=[:list, :of, :things]>
+  df.labels                              
+  # => [:list, :of, :things]
+  df << [1,2,3]                          
+  # => [[1, 2, 3]]
+  df.import([[2,3,4],[5,6,7]])           
+  # => [[2, 3, 4], [5, 6, 7]]
+  df.items                               
+  # => [[1, 2, 3], [2, 3, 4], [5, 6, 7]]
+  df.list                                
+  # => [1, 2, 5]
+  df.list.correlation(df.things)
+  # => 1.0
+  df.list
+  # => [1, 2, 5]
+  df.things
+  # => [3, 4, 7]
+
+There are a few important features to know:
+
+* DataFrame.from_csv works for a string, a filename, or a URL.
+* FasterCSV parsing parameters can be passed to DataFrame.from_csv
+* DataFrame looks for operations first on the column labels, then on the row labels, then on the items table.  So don't name things :mean, :standard_deviation, :min, and that sort of thing.
+* CallbackArray allows you to set a callback anytime an array is tainted or untainted (taint, shift, pop, clear, map!, that sort of thing).  This is generally useful and will probably be copied into the Repositories gem.
+* TransposableArray is a subclass of CallbackArray, demonstrating how to use it.  It creates a very simple approach to memoization.  It caches the transpose of the table and resets it whenever it is tainted.
+
+To get your feet wet, you may want to play with data sets found here:
+
+  http://www.liaad.up.pt/~ltorgo/Regression/DataSets.html
+  
+  
+==Installation
+
+sudo gem install davidrichards-data_frame
+
+=== Dependencies
+
+* ActiveSupport: sudo gem install active_support
+* JustEnumerableStats: sudo gem install davidrichards-just_enumerable_stats
+* FasterCSV: sudo gem install faster_csv
+
+==COPYRIGHT
+
+Copyright (c) 2009 David Richards. See LICENSE for details.

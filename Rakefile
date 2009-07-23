@@ -4,11 +4,14 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |s|
     s.name = "data_frame"
-    s.summary = %Q{TODO}
+    s.summary = %Q{Data Frames with memoized transpose}
     s.email = "davidlamontrichards@gmail.com"
     s.homepage = "http://github.com/davidrichards/data_frame"
-    s.description = "TODO"
+    s.description = "Data Frames with memoized transpose"
     s.authors = ["David Richards"]
+    s.add_dependency('active_support')
+    s.add_dependency('davidrichards-just_enumerable_stats')
+    s.add_dependency('faster_csv')
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
