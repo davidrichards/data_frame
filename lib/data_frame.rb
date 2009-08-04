@@ -38,7 +38,7 @@ class DataFrame
     # DataFrame.from_csv('http://example.com/my_special_url.csv', :converters => :special)
     # This returns bar where 'foo' was found and 'foo' everywhere else.
     def from_csv(obj, opts={})
-      labels, table = infer_csv_contents(obj)
+      labels, table = infer_csv_contents(obj, opts)
       return nil unless labels and table
       df = new(*labels)
       df.import(table)
