@@ -4,6 +4,14 @@ require 'just_enumerable_stats'
 require 'open-uri'
 require 'fastercsv'
 
+# Use a Dictionary if available
+begin
+  require 'facets/dictionary'
+rescue LoadError => e
+  # Do nothing
+end
+
+
 Dir.glob("#{File.dirname(__FILE__)}/ext/*.rb").each { |file| require file }
 
 $:.unshift(File.dirname(__FILE__))
@@ -92,6 +100,25 @@ class DataFrame
     i = @labels.index(sym)
     return nil unless i
     @items.transpose[i]
+  end
+  
+  # The rows as an array of arrays, an alias for items.
+  alias :rows :items
+  
+  # The columns as a Dictionary or Hash
+  # This is cached, call columns(true) to reset the cache.
+  def columns(reset=false)
+    @columns = nil if reset
+    return @columns if @columns
+    
+    container = defined?(Dictionary) ? Dictionary.new : Hash.new
+    i = 0
+    
+    @columns = @items.transpose.inject(container) do |cont, col|
+      cont[@labels[i]] = col
+      i += 1
+      cont
+    end
   end
   
   def render_row(sym)

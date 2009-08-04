@@ -101,5 +101,18 @@ describe DataFrame do
     @df.labels.should eql([:threes, :fours])
   end
   
+  it "should offer a hash-like structure of columns" do
+    @df.add [1,2,3,4]
+    @df.add [5, 6, 7, 8]
+    @df.columns[:these].should eql([1, 5])
+    @df.columns[:are].should eql([2, 6])
+    @df.columns[:the].should eql([3, 7])
+    @df.columns[:labels].should eql([4, 8])
+  end
   
+  it "should alias items with rows" do
+    @df.add [1,2,3,4]
+    @df.add [5, 6, 7, 8]
+    @df.rows.should eql(@df.items)
+  end
 end
