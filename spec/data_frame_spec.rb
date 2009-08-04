@@ -93,6 +93,13 @@ describe DataFrame do
     end
   end
   
+  it "should be able to remove a column" do
+    @df = DataFrame.new :twos, :threes, :fours
+    @df.import([[2,3,4], [2,3,4], [2,3,4], [2,3,4]])
+    @df.drop!(:twos)
+    @df.items.all? {|i| i.should eql([3,4])}
+    @df.labels.should eql([:threes, :fours])
+  end
   
   
 end

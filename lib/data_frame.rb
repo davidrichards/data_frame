@@ -77,6 +77,7 @@ class DataFrame
   def add_item(item)
     self.items << item
   end
+  alias :add :add_item
   
   def row_labels
     @row_labels ||= []
@@ -109,6 +110,16 @@ class DataFrame
     else
       super
     end
+  end
+  
+  def drop!(label)
+    i = self.labels.index(label)
+    return nil unless i
+    self.items.each do |item|
+      item.delete_at(i)
+    end
+    self.labels.delete_at(i)
+    true
   end
   
 end
