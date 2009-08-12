@@ -126,4 +126,9 @@ describe DataFrame do
     hash.values.size.should eql(@labels.size)
     hash.values.all? {|e| values.should be_include(e)}
   end
+  
+  it "should use variables like labels" do
+    @df.labels.should eql(@labels)
+    @df.variables.should eql(@labels)
+  end
 end

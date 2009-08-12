@@ -73,6 +73,7 @@ class DataFrame
   
   # The labels of the data items
   attr_reader :labels
+  alias :variables :labels
   
   # The items stored in the frame
   attr_reader :items
