@@ -120,6 +120,8 @@ class DataFrame
       cont
     end
   end
+  alias :to_hash :columns
+  alias :to_dictionary :columns
   
   def render_row(sym)
     i = self.row_labels.index(sym)
@@ -148,5 +150,5 @@ class DataFrame
     self.labels.delete_at(i)
     true
   end
-  
+    
 end

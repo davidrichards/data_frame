@@ -115,4 +115,15 @@ describe DataFrame do
     @df.add [5, 6, 7, 8]
     @df.rows.should eql(@df.items)
   end
+  
+  it "should be able to export a hash" do
+    @df.add [1,2,3,4]
+    @df.add [5, 6, 7, 8]
+    hash = @df.to_hash
+    values = [[1,5],[2,6],[3,7],[4,8]]
+    hash.keys.size.should eql(@labels.size)
+    hash.keys.all? {|e| @labels.should be_include(e)}
+    hash.values.size.should eql(@labels.size)
+    hash.values.all? {|e| values.should be_include(e)}
+  end
 end
