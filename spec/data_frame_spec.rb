@@ -101,6 +101,14 @@ describe DataFrame do
     @df.labels.should eql([:threes, :fours])
   end
   
+  it "should be able to remove more than one column at a time" do
+    @df = DataFrame.new :twos, :threes, :fours
+    @df.import([[2,3,4], [2,3,4], [2,3,4], [2,3,4]])
+    @df.drop!(:twos, :fours)
+    @df.items.all? {|i| i.should eql([3])}
+    @df.labels.should eql([:threes])
+  end
+  
   it "should offer a hash-like structure of columns" do
     @df.add [1,2,3,4]
     @df.add [5, 6, 7, 8]
@@ -130,5 +138,57 @@ describe DataFrame do
   it "should use variables like labels" do
     @df.labels.should eql(@labels)
     @df.variables.should eql(@labels)
+  end
+  
+  context "replace!" do
+    before do
+      @df.add [1,2,3,4]
+      @df.add [5, 6, 7, 8]
+      @doubler = lambda{|e| e * 2}
+    end
+
+    it "should only replace columns that actually exist" do
+      lambda{@df.replace!(:not_a_column, &@doubler)}.should raise_error(
+        ArgumentError, /Must provide the name of an existing column./)
+      lambda{@df.replace!(:these, &@doubler)}.should_not raise_error
+    end
+
+    it "should be able to replace a column with a block" do
+      @df.replace!(:these) {|e| e * 2}
+      @df.these.should eql([2,10])
+    end
+    
+    it "should be able to replace a column with an array" do
+      @a = [5,9]
+      @df.replace!(:these, @a)
+      @df.these.should eql(@a)
+    end
+  end
+  
+  context "filter!" do
+    before do
+      @df.add [1,2,3,4]
+      @df.add [5, 6, 7, 8]
+    end
+    
+    it "should be able to filter a data frame with a block" do
+      @df.filter!(:open_struct) {|row| row.these == 5}
+      @df.items.should eql([[5, 6, 7, 8]])
+    end
+  end
+  
+  context "subset_from_columns" do
+    before do
+      @df.add [1,2,3,4]
+      @df.add [5, 6, 7, 8]
+    end
+
+    it "should be able to create a subset of columns" do
+      new_data_frame = @df.subset_from_columns(:these, :labels)
+      new_data_frame.should_not eql(@df)
+      new_data_frame.labels.should eql([:these, :labels])
+      new_data_frame.items.should eql([[1,4],[5,8]])
+      new_data_frame.these.should eql([1,5])
+    end
   end
 end

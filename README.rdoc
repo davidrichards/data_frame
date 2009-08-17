@@ -48,6 +48,33 @@ To get your feet wet, you may want to play with data sets found here:
 
   http://www.liaad.up.pt/~ltorgo/Regression/DataSets.html
   
+== Transformations
+
+A lot of the work in the data frame is to transform the actual table.  You may need to drop columns, filter results, replace values in a column or create a new data frame based on the existing one.  Here's how to do that:
+
+  >  df = DataFrame.from_csv('http://archive.ics.uci.edu/ml/machine-learning-databases/forest-fires/forestfires.csv')
+  # => DataFrame rows: 517 labels: [:x, :y, :month, :day, :ffmc, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]
+  > df.drop!(:ffmc)
+  # => DataFrame rows: 517 labels: [:x, :y, :month, :day, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]
+  > df.drop!(:dmc, :dc, :isi, :rh)
+  # => DataFrame rows: 517 labels: [:x, :y, :month, :day, :temp, :wind, :rain, :area]
+  > df.x
+  # => [7, 7, 7, 8, 8, 8, 8, 8, 8, 7, 7, 7, 6, 6, 6,...]
+  > df.replace!(:x) {|e| e * 3}
+  # => DataFrame rows: 517 labels: [:x, :y, :month, :day, :temp, :wind, :rain, :area]
+  > df.x                       
+  # => [21, 21, 21, 24, 24, 24, 24, 24, 24, 21, 21, 21, 18, 18, 18,...]
+  > df.filter!(:open_struct) {|row| row.x == 24}
+  # => DataFrame rows: 61 labels: [:x, :y, :month, :day, :temp, :wind, :rain, :area]
+  > df.x
+  # => [24, 24, 24, 24, 24, 24, 24, 24, 24,...]
+  > new_data_frame = df.subset_from_columns(:x, :y)
+  # => DataFrame rows: 61 labels: [:x, :y]
+  > new_data_frame.items
+  # => [[24, 6], [24, 6], [24, 6], [24, 6], ...]
+
+
+Note: most of these transformations are not optimized.  I'll work with things for a while before I try to optimize this library.  However, I should say that I've used some fairly large data sets (thousands of rows) and have been fine with things so far.
   
 ==Installation
 

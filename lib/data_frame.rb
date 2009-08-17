@@ -3,6 +3,7 @@ require 'activesupport'
 require 'just_enumerable_stats'
 require 'open-uri'
 require 'fastercsv'
+require 'ostruct'
 
 # Use a Dictionary if available
 begin
@@ -57,6 +58,9 @@ class DataFrame
         return nil unless contents
         table = FCSV.parse(contents, default_csv_opts.merge(opts))
         labels = table.shift
+        while table.last.empty?
+          table.pop
+        end
         [labels, table]
       end
       
@@ -69,6 +73,10 @@ class DataFrame
     rows.each do |row|
       self.add_item(row)
     end
+  end
+  
+  def inspect
+    "DataFrame rows: #{self.rows.size} labels: #{self.labels.inspect}"
   end
   
   # The labels of the data items
@@ -142,14 +150,108 @@ class DataFrame
     end
   end
   
-  def drop!(label)
+  def drop!(*labels)
+    labels.each do |label|
+      drop_one!(label)
+    end
+    self
+  end
+  
+  def drop_one!(label)
     i = self.labels.index(label)
     return nil unless i
     self.items.each do |item|
       item.delete_at(i)
     end
     self.labels.delete_at(i)
-    true
+    self
+  end
+  protected :drop_one!
+  
+  def replace!(column, values=nil, &block)
+    column = validate_column(column)
+    if not values
+      values = self.send(column)
+      values.map! {|e| block.call(e)}
+    end
+    replace_column(column, values)
+    self
+  end
+  
+  def replace_column(column, values)
+    column = validate_column(column)
+    index = self.labels.index(column)
+    list = []
+    self.items.each_with_index do |item, i|
+      consolidated = item
+      consolidated[index] = values[i]
+      list << consolidated
+    end
+    @items = list.dup
+  end
+  protected :replace_column
+  
+  def validate_column(column)
+    column = column.to_sym
+    raise ArgumentError, "Must provide the name of an existing column.  Provided #{column.inspect}, needed to provide one of #{self.labels.inspect}" unless self.labels.include?(column)
+    column
+  end
+  protected :validate_column
+  
+  # Takes a block to evaluate on each row.  The row can be converted into
+  # an OpenStruct or a Hash for easier filter methods. Note, don't try this
+  # with a hash or open struct unless you have facets available.
+  def filter!(as=Array, &block)
+    as = infer_class(as)
+    items = []
+    self.items.each do |row|
+      value = block.call(cast_row(row, as))
+      items << row if value
+    end
+    @items = items.dup
+    self
+  end
+  
+  def infer_class(obj)
+    obj = obj.to_s.classify.constantize if obj.is_a?(Symbol)
+    obj = obj.classify.constantize if obj.is_a?(String)
+    obj
+  end
+  protected :infer_class
+  
+  def cast_row(row, as)
+    if as == Hash
+      obj = {}
+      self.labels.each_with_index do |label, i|
+        obj[label] = row[i]
+      end
+      obj
+    elsif as == OpenStruct
+      obj = OpenStruct.new
+      self.labels.each_with_index do |label, i|
+        obj.table[label] = row[i]
+      end
+      obj
+    elsif as == Array
+      row
+    else
+      as.new(row)
+    end
+  end
+  protected :cast_row
+  
+  # Creates a new data frame, only with the specified columns.
+  def subset_from_columns(*cols)
+    new_labels = self.labels.inject([]) do |list, label|
+      list << label if cols.include?(label)
+      list
+    end
+    new_data_frame = DataFrame.new(*self.labels)
+    new_data_frame.import(self.items)
+    self.labels.each do |label|
+      new_data_frame.drop!(label) unless new_labels.include?(label)
+    end
+    new_data_frame
   end
     
 end
