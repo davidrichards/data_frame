@@ -212,6 +212,11 @@ class DataFrame
     self
   end
   
+  def filter(as=Array, &block)
+    new_data_frame = self.clone
+    new_data_frame.filter!(as, &block)
+  end
+  
   def infer_class(obj)
     obj = obj.to_s.classify.constantize if obj.is_a?(Symbol)
     obj = obj.classify.constantize if obj.is_a?(String)
@@ -235,7 +240,7 @@ class DataFrame
     elsif as == Array
       row
     else
-      as.new(row)
+      as.new(*row)
     end
   end
   protected :cast_row
@@ -252,6 +257,54 @@ class DataFrame
       new_data_frame.drop!(label) unless new_labels.include?(label)
     end
     new_data_frame
+  end
+  
+  # A weird name.  This creates a column for every category in a column
+  # and marks each row by its value 
+  def j_binary_ize!(*columns)
+    columns.each do |col|
+      values = render_column(col.to_underscore_sym)
+      values.categories.each do |category|
+        self.append!(category, values.map{|e| e == category ? true : false})
+      end
+    end
+  end
+  
+  # Adds a unique column to the table
+  def append!(column_name, value=nil)
+    raise ArgumentError, "Can't have duplicate column names" if self.labels.include?(column_name)
+    self.labels << column_name.to_underscore_sym
+    if value.is_a?(Array)
+      self.items.each_with_index do |item, i|
+        item << value[i]
+      end
+    else
+      self.items.each do |item|
+        item << value
+      end
+    end
+    # Because we are tainting the sub arrays, the TaintableArray doesn't know it's been changed.
+    self.items.taint
+  end
+  
+  def filter_by_category(hash)
+    new_data_frame = self.dup
+    hash.each do |key, value|
+      key = key.to_underscore_sym
+      next unless self.labels.include?(key)
+      value = [value] unless value.is_a?(Array) or value.is_a?(Range)
+      new_data_frame.filter!(:hash) {|row| value.include?(row[key])}
+    end
+    new_data_frame
+  end
+
+  def filter_by_category!(hash)
+    hash.each do |key, value|
+      key = key.to_underscore_sym
+      next unless self.labels.include?(key)
+      value = [value] unless value.is_a?(Array) or value.is_a?(Range)
+      self.filter!(:hash) {|row| value.include?(row[key])}
+    end
   end
     
 end

@@ -171,10 +171,83 @@ describe DataFrame do
       @df.add [5, 6, 7, 8]
     end
     
-    it "should be able to filter a data frame with a block" do
+    it "should be able to filter a data frame with a block using an OpenStruct for each row" do
       @df.filter!(:open_struct) {|row| row.these == 5}
       @df.items.should eql([[5, 6, 7, 8]])
     end
+    
+    it "should be able to filter a data frame with a block using a Hash for each row" do
+      @df.filter!(:hash) {|row| row[:these] == 5}
+      @df.items.should eql([[5, 6, 7, 8]])
+    end
+    
+    S4 = Struct.new(:one, :two, :three, :four)
+    it "should be able to filter a data frame with a block using another class that uses the row as input" do
+      @df.filter!(S4) {|row| row.one == 5}
+      @df.items.should eql([[5, 6, 7, 8]])
+    end
+    
+    it "should be able to filter a data frame with a block using an array for each row" do
+      @df.filter! {|row| row.first == 5}
+      @df.items.should eql([[5, 6, 7, 8]])
+    end
+    
+    it "should be able to do fancy things with the row as the filter" do
+      @df.filter! {|row| row.sum > 10}
+      @df.items.should eql([[5, 6, 7, 8]])
+    end
+    
+    it "should be able to generate a new data frame with filter" do
+      new_df = @df.filter(:open_struct) {|row| row.these == 5}
+      new_df.items.should eql([[5, 6, 7, 8]])
+      @df.items.should eql([[1, 2, 3, 4], [5, 6, 7, 8]])
+    end
+    
+  end
+  
+  context "filter_by_category" do
+    
+    before do
+      @df = DataFrame.new(:weather, :date)
+
+      (1..31).each do |i|
+        @df.add [(i % 3 == 1) ? :fair : :good, Date.parse("07/#{i}/2009")]
+      end
+
+      @d1 = Date.parse("07/15/2009")
+      @d2 = Date.parse("07/31/2009")
+
+    end
+    
+    it "should be able to filter by category" do
+      filtered = @df.filter_by_category(:weather => :good)
+      filtered.weather.uniq.should eql([:good])
+      @df.weather.uniq.should be_include(:fair)
+    end
+    
+    it "should be able to manage ranges for filter values" do
+      filtered = @df.filter_by_category(:date => (@d1..@d2))
+      filtered.date.should_not be_include(Date.parse("07/01/2009"))
+      filtered.date.should_not be_include(Date.parse("07/14/2009"))
+      filtered.date.should be_include(Date.parse("07/15/2009"))
+      filtered.date.should be_include(Date.parse("07/31/2009"))
+      @df.date.should be_include(Date.parse("07/01/2009"))
+    end
+    
+    it "should be able to take an array of values to filter with" do
+      filtered = @df.filter_by_category(:date => [@d1, @d2])
+      filtered.date.should_not be_include(Date.parse("07/01/2009"))
+      filtered.date.should be_include(Date.parse("07/15/2009"))
+      filtered.date.should be_include(Date.parse("07/31/2009"))
+    end
+    
+    it "should have a destructive version" do
+      @df.filter_by_category!(:date => [@d1, @d2])
+      @df.date.should_not be_include(Date.parse("07/01/2009"))
+      @df.date.should be_include(Date.parse("07/15/2009"))
+      @df.date.should be_include(Date.parse("07/31/2009"))
+    end
+    
   end
   
   context "subset_from_columns" do
@@ -189,6 +262,45 @@ describe DataFrame do
       new_data_frame.labels.should eql([:these, :labels])
       new_data_frame.items.should eql([[1,4],[5,8]])
       new_data_frame.these.should eql([1,5])
+    end
+  end
+  
+  it "should be able to j_binary_ize! a column, taking its categories and creating a column for each" do
+    df = DataFrame.new(:observations)
+    df.add [:many]
+    df.add [:fine]
+    df.add [:things]
+    df.add [:are]
+    df.add [:available]
+    df.j_binary_ize!(:observations)
+    df.many.should eql([true, false, false, false, false])
+    df.fine.should eql([false, true, false, false, false])
+    df.things.should eql([false, false, true, false, false])
+    df.are.should eql([false, false, false, true, false])
+    df.available.should eql([false, false, false, false, true])
+    df.observations.should eql([:many, :fine, :things, :are, :available])
+  end
+  
+  context "append!" do
+    
+    before do
+      @df.add [1,2,3,4]
+      @df.add [5, 6, 7, 8]
+    end
+    
+    it "should be able to append an array of values to the data frame" do
+      @df.append!(:new_column, [5,5])
+      @df.new_column.should eql([5,5])
+    end
+    
+    it "should be able to append a default value to the data frame" do
+      @df.append!(:new_column, :value)
+      @df.new_column.should eql([:value, :value])
+    end
+    
+    it "should use nil as the default value" do
+      @df.append!(:new_column)
+      @df.new_column.should eql([nil, nil])
     end
   end
 end

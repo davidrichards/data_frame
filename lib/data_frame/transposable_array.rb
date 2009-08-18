@@ -6,6 +6,7 @@ class TransposableArray < CallbackArray
   
   orig_transpose = instance_method(:transpose)
   define_method(:transpose) {
+    self.untaint
     @transpose ||= orig_transpose.bind(self).call
   }
   
