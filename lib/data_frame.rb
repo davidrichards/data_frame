@@ -262,10 +262,23 @@ class DataFrame
   # A weird name.  This creates a column for every category in a column
   # and marks each row by its value 
   def j_binary_ize!(*columns)
+    # Allows to mix a hash with the columns.
+    options = columns.find_all {|e| e.is_a?(Hash)}.inject({}) {|h, e| h.merge!(e)}
+    columns.delete_if {|e| e.is_a?(Hash)}
+    
+    # Generates new columns
     columns.each do |col|
       values = render_column(col.to_underscore_sym)
       values.categories.each do |category|
-        self.append!(category, values.map{|e| e == category ? true : false})
+        full_name = (col.to_s + "_" + category.to_s).to_sym
+        if options[:allow_overlap]
+          category_map = values.inject([]) do |list, e|
+            list << values.all_categories(e)
+          end
+          self.append!(full_name, category_map.map{|e| e.include?(category)})
+        else
+          self.append!(full_name, values.category_map.map{|e| e == category})
+        end
       end
     end
   end

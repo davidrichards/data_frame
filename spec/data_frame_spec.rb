@@ -24,7 +24,7 @@ describe DataFrame do
   end
 
   it "should use just_enumerable_stats" do
-    [1,2,3].std.should eql(1.0)
+    [1,2,3].std.should eql(1)
     lambda{[1,2,3].cor([2,3,5])}.should_not raise_error
   end
 
@@ -66,7 +66,7 @@ describe DataFrame do
     
     it "should make rows easily computable" do
       @df.row_labels = [:other, :things, :here]
-      @df.here.std.should be_close(1.414, 0.001)
+      @df.here.sum.should eql(42)
     end
   end
   
@@ -273,12 +273,47 @@ describe DataFrame do
     df.add [:are]
     df.add [:available]
     df.j_binary_ize!(:observations)
-    df.many.should eql([true, false, false, false, false])
-    df.fine.should eql([false, true, false, false, false])
-    df.things.should eql([false, false, true, false, false])
-    df.are.should eql([false, false, false, true, false])
-    df.available.should eql([false, false, false, false, true])
+    df.observations_many.should eql([true, false, false, false, false])
+    df.observations_fine.should eql([false, true, false, false, false])
+    df.observations_things.should eql([false, false, true, false, false])
+    df.observations_are.should eql([false, false, false, true, false])
+    df.observations_available.should eql([false, false, false, false, true])
     df.observations.should eql([:many, :fine, :things, :are, :available])
+  end
+  
+  it "should be able to j_binary_ize! a more normal column" do
+    df = DataFrame.new(:observations)
+    df.import([1,2,3,4,5,4,3,2,1].map{|e| Array(e)})
+    df.observations.add_category(:small) {|e| e <= 3}
+    df.observations.add_category(:large) {|e| e >= 3}
+    df.j_binary_ize!(:observations)
+    df.observations_small.should eql([true, true, true, false, false, false, true, true, true])
+    df.observations_large.should eql([false, false, false, true, true, true, false, false, false])
+  end
+  
+  it "should be able to j_binary_ize with non-adjacent sets (sets that allow a value to have more than one category)" do
+    df = DataFrame.new(:observations)
+    df.import([1,2,3,4,5,4,3,2,1].map{|e| Array(e)})
+    df.observations.add_category(:small) {|e| e <= 3}
+    df.observations.add_category(:large) {|e| e >= 3}
+    df.j_binary_ize!(:observations, :allow_overlap => true)
+    df.observations_small.should eql([true, true, true, false, false, false, true, true, true])
+    df.observations_large.should eql([false, false, true, true, true, true, true, false, false])
+  end
+  
+  it "should be able to hold multiple ideas of a columns categories by resetting the category and re-running j_binary_ize" do
+    df = DataFrame.new(:observations)
+    df.import([1,2,3,4,5,4,3,2,1].map{|e| Array(e)})
+    df.observations.add_category(:small) {|e| e <= 3}
+    df.observations.add_category(:large) {|e| e >= 3}
+    df.j_binary_ize!(:observations, :allow_overlap => true)
+    df.observations.set_categories(:odd => lambda{|e| e.odd?}, :even => lambda{|e| e.even?})
+    df.j_binary_ize!(:observations)
+    df.observations_small.should eql([true, true, true, false, false, false, true, true, true])
+    df.observations_large.should eql([false, false, true, true, true, true, true, false, false])
+    df.observations.should eql([1,2,3,4,5,4,3,2,1])
+    df.observations_even.should eql([false, true, false, true, false, true, false, true, false])
+    df.observations_odd.should eql([true, false, true, false, true, false, true, false, true])
   end
   
   context "append!" do
