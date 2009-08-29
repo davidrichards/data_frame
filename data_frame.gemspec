@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{data_frame}
-  s.version = "0.0.16"
+  s.version = "0.0.17"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["David Richards"]
-  s.date = %q{2009-08-28}
+  s.date = %q{2009-08-29}
   s.description = %q{Data Frames with memoized transpose}
   s.email = %q{davidlamontrichards@gmail.com}
   s.files = ["README.rdoc", "VERSION.yml", "lib/data_frame", "lib/data_frame/callback_array.rb", "lib/data_frame/data_frame.rb", "lib/data_frame/model.rb", "lib/data_frame/parameter_capture.rb", "lib/data_frame/transposable_array.rb", "lib/data_frame.rb", "lib/ext", "lib/ext/open_struct.rb", "lib/ext/string.rb", "lib/ext/symbol.rb", "spec/data_frame", "spec/data_frame/callback_array_spec.rb", "spec/data_frame/data_frame_spec.rb", "spec/data_frame/model_spec.rb", "spec/data_frame/parameter_capture_spec.rb", "spec/data_frame/transposable_array_spec.rb", "spec/data_frame_spec.rb", "spec/spec_helper.rb"]
