@@ -75,6 +75,21 @@ A lot of the work in the data frame is to transform the actual table.  You may n
 
 
 Note: most of these transformations are not optimized.  I'll work with things for a while before I try to optimize this library.  However, I should say that I've used some fairly large data sets (thousands of rows) and have been fine with things so far.
+
+== Models
+
+Data Frame can now create sub-models:
+
+	>> df = DataFrame.from_csv('http://archive.ics.uci.edu/ml/machine-learning-databases/forest-fires/forestfires.csv')
+	=> DataFrame rows: 517 labels: [:x, :y, :month, :day, :ffmc, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]
+	>> df.model(:weekend) do |m|
+	?> m.day %w(sat sun)
+	>> end
+	=> DataFrame rows: 179 labels: [:x, :y, :month, :day, :ffmc, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]
+	>> df.models.weekend.day.uniq
+	=> ["sat", "sun"]
+	>> df.models
+	=> #<OpenStruct weekend=DataFrame rows: 179 labels: [:x, :y, :month, :day, :ffmc, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]>
   
 ==Installation
 
