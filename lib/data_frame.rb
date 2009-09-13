@@ -20,5 +20,6 @@ $:.unshift(File.dirname(__FILE__))
 require 'data_frame/callback_array'
 require 'data_frame/transposable_array'
 require 'data_frame/parameter_capture'
+require 'data_frame/arff'
 require 'data_frame/data_frame'
 require 'data_frame/model'

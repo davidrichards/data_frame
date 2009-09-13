@@ -18,13 +18,25 @@ class DataFrame
     # This returns bar where 'foo' was found and 'foo' everywhere else.
     def from_csv(obj, opts={})
       labels, table = infer_csv_contents(obj, opts)
+      name = infer_name_from_contents(obj, opts)
       return nil unless labels and table
       df = new(*labels)
       df.import(table)
+      df.name = name
       df
     end
     
     protected
+    
+      # Only works for names sources, urls and files
+      def infer_name_from_contents(obj, opts={})
+        begin
+          File.split(obj).last.split('.')[0..-2].join('.').titleize
+        rescue
+          nil
+        end
+      end
+      
       def infer_csv_contents(obj, opts={})
         contents = File.read(obj) if File.exist?(obj)
         begin
@@ -45,6 +57,9 @@ class DataFrame
       def default_csv_opts; {:converters => :all}; end
   end
   
+  # Include the methods from arff.rb
+  include ARFF
+  
   # Loads a batch of rows.  Expects an array of arrays, else you don't
   # know what you have. 
   def import(rows)
@@ -63,6 +78,9 @@ class DataFrame
   
   # The items stored in the frame
   attr_reader :items
+  
+  # An optional name, useful for arff files
+  attr_accessor :name
   
   def initialize(*labels)
     @labels = labels.map {|e| e.to_underscore_sym }

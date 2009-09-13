@@ -12,6 +12,10 @@ describe DataFrame do
     df.labels.should eql(@labels)
   end
   
+  it "should have an optional name" do
+    @df.name = :some_name
+    @df.name.should eql(:some_name)
+  end
   it "should initialize with an empty items list" do
     @df.items.should be_is_a(TransposableArray)
     @df.items.should be_empty
@@ -90,6 +94,18 @@ describe DataFrame do
       @df.labels.should eql(labels)
       @df.x.should eql([7,7])
       @df.area.should eql([0,0])
+    end
+    
+    it "should infer a name when importing from a file" do
+      filename = "/tmp/data_frame_spec.csv"
+      contents = %{X,Y,month,day,FFMC,DMC,DC,ISI,temp,RH,wind,rain,area
+7,5,mar,fri,86.2,26.2,94.3,5.1,8.2,51,6.7,0,0
+7,4,oct,tue,90.6,35.4,669.1,6.7,18,33,0.9,0,0
+}
+      File.open(filename, 'w') {|f| f.write contents}
+      @df = DataFrame.from_csv(filename)
+      @df.name.should eql('Data Frame Spec')
+      `rm -rf #{filename}`
     end
   end
   
