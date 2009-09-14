@@ -279,6 +279,55 @@ class DataFrame
     end
   end
   
+  # Adds a column, numerical_column_name that shows the same data as a
+  # nominal value, but as a number. 
+  def numericize!(*columns)
+    columns.each do |col|
+      values = render_column(col.to_underscore_sym)
+      categories = values.categories
+      value_categories = values.map {|v| values.category(v)}
+      
+      i = 0
+      category_map = value_categories.uniq.inject({}) do |h, c|
+        h[c] = i
+        i += 1
+        h
+      end
+      
+      blank = Array.new(category_map.size, 0)
+      reverse_category_map = category_map.inject({}) {|h, e| h[e.last] = e.first; h}
+
+      new_values = values.inject([]) do |list, val|
+        a = blank.dup
+        a[category_map[values.category(val)]] = 1
+        list << a
+      end
+      
+      new_name = "numerical #{col.to_s}".to_underscore_sym
+      self.append!(new_name, new_values)
+    end
+  end
+
+  # Saves a data frame as CSV.  
+  # Examples:
+  # df.save('/tmp/some_filename.csv')
+  # df.save('/tmp/some_filename.csv', :include_header => false) # No header information is saved
+  # df.save('/tmp/some_filename.csv', :only => [:list, :of, :columns])
+  # df.save('/tmp/some_filename.csv', :subset => [:list, :of, :columns])
+  # df.save('/tmp/some_filename.csv', 
+  #   :filter => {:column_name => :category_value, 
+  #     :another_column_name => (range..values)}) # Filter by category
+  def save(filename, opts={})
+    
+    df = self
+    df = df.subset_from_columns(*Array(opts[:only])) if opts[:only]
+    df = df.subset_from_columns(*Array(opts[:subset])) if opts[:subset]
+    df = df.filter_by_category(opts[:filter]) if opts[:filter]
+    df = df.filter_by_category(opts[:filter_by_category]) if opts[:filter_by_category]
+    
+    File.open(filename, "w") { |f| f.write df.to_csv(opts.fetch(:include_header, true)) }
+  end
+  
   # Adds a unique column to the table
   def append!(column_name, value=nil)
     raise ArgumentError, "Can't have duplicate column names" if self.labels.include?(column_name)
