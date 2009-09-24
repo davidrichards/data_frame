@@ -91,6 +91,22 @@ Data Frame can now create sub-models:
 	>> df.models
 	=> #<OpenStruct weekend=DataFrame rows: 179 labels: [:x, :y, :month, :day, :ffmc, :dmc, :dc, :isi, :temp, :rh, :wind, :rain, :area]>
   
+== Utilities
+
+I use data frame for a lot of things, and I've added some utilities for this gem in case you would like to as well.  For instance, here is how I take the data in a data frame and load it into a neural network:
+
+  # Show mlp.  Will probably need to add a row classifier for training and test data.  Also, will probably want to 
+
+== CLI
+
+There are some really interesting things that have good command-line shortcuts:
+
+* Make
+* A 
+* List
+
+	# Now add some demos
+	
 ==Installation
 
 sudo gem install davidrichards-data_frame

@@ -4,70 +4,6 @@
 # is tainted. 
 class DataFrame
   
-  class << self
-    
-    # This is the neatest part of this neat gem.
-    # DataFrame.from_csv can be called in a lot of ways:
-    # DataFrame.from_csv(csv_contents)
-    # DataFrame.from_csv(filename)
-    # DataFrame.from_csv(url)
-    # If you need to define converters for FasterCSV, do it before calling
-    # this method: 
-    # FasterCSV::Converters[:special] = lambda{|f| f == 'foo' ? 'bar' : 'foo'}
-    # DataFrame.from_csv('http://example.com/my_special_url.csv', :converters => :special)
-    # This returns bar where 'foo' was found and 'foo' everywhere else.
-    def from_csv(obj, opts={})
-      labels, table = infer_csv_contents(obj, opts)
-      name = infer_name_from_contents(obj, opts)
-      return nil unless labels and table
-      df = new(*labels)
-      df.import(table)
-      df.name = name
-      df
-    end
-    
-    protected
-    
-      # Only works for names sources, urls and files
-      def infer_name_from_contents(obj, opts={})
-        begin
-          File.split(obj).last.split('.')[0..-2].join('.').titleize
-        rescue
-          nil
-        end
-      end
-      
-      def infer_csv_contents(obj, opts={})
-        contents = File.read(obj) if File.exist?(obj)
-        begin
-          open(obj) {|f| contents = f.read} unless contents
-        rescue
-          nil
-        end
-        contents ||= obj if obj.is_a?(String)
-        return nil unless contents
-        table = FCSV.parse(contents, default_csv_opts.merge(opts))
-        labels = table.shift
-        while table.last.empty?
-          table.pop
-        end
-        [labels, table]
-      end
-      
-      def default_csv_opts; {:converters => :all}; end
-  end
-  
-  # Include the methods from arff.rb
-  include ARFF
-  
-  # Loads a batch of rows.  Expects an array of arrays, else you don't
-  # know what you have. 
-  def import(rows)
-    rows.each do |row|
-      self.add_item(row)
-    end
-  end
-  
   def inspect
     "DataFrame rows: #{self.rows.size} labels: #{self.labels.inspect}"
   end
@@ -83,14 +19,10 @@ class DataFrame
   attr_accessor :name
   
   def initialize(*labels)
+    labels = labels.first if labels.size == 1 and labels.first.is_a?(Array)
     @labels = labels.map {|e| e.to_underscore_sym }
     @items = TransposableArray.new
   end
-  
-  def add_item(item)
-    self.items << item
-  end
-  alias :add :add_item
   
   def row_labels
     @row_labels ||= []
@@ -101,14 +33,21 @@ class DataFrame
     @row_labels = ary
   end
   
+  # The rows as an array of arrays, an alias for items.
+  alias :rows :items
+  
+  def render_row(sym)
+    i = self.row_labels.index(sym)
+    return nil unless i
+    @items[i]
+  end
+  
+  # Return the column, given its name
   def render_column(sym)
-    i = @labels.index(sym)
+    i = @labels.index(sym.to_underscore_sym)
     return nil unless i
     @items.transpose[i]
   end
-  
-  # The rows as an array of arrays, an alias for items.
-  alias :rows :items
   
   # The columns as a Dictionary or Hash
   # This is cached, call columns(true) to reset the cache.
@@ -128,12 +67,6 @@ class DataFrame
   alias :to_hash :columns
   alias :to_dictionary :columns
   
-  def render_row(sym)
-    i = self.row_labels.index(sym)
-    return nil unless i
-    @items[i]
-  end
-  
   def method_missing(sym, *args, &block)
     if self.labels.include?(sym)
       render_column(sym)
@@ -146,223 +79,37 @@ class DataFrame
     end
   end
   
-  def drop!(*labels)
-    labels.each do |label|
-      drop_one!(label)
+  protected
+  
+    def validate_column(column)
+      column = column.to_sym
+      raise ArgumentError, "Must provide the name of an existing column.  Provided #{column.inspect}, needed to provide one of #{self.labels.inspect}" unless self.labels.include?(column)
+      column
     end
-    self
-  end
-  
-  def drop_one!(label)
-    i = self.labels.index(label)
-    return nil unless i
-    self.items.each do |item|
-      item.delete_at(i)
-    end
-    self.labels.delete_at(i)
-    self
-  end
-  protected :drop_one!
-  
-  def replace!(column, values=nil, &block)
-    column = validate_column(column)
-    if not values
-      values = self.send(column)
-      values.map! {|e| block.call(e)}
-    end
-    replace_column(column, values)
-    self
-  end
-  
-  def replace_column(column, values)
-    column = validate_column(column)
-    index = self.labels.index(column)
-    list = []
-    self.items.each_with_index do |item, i|
-      consolidated = item
-      consolidated[index] = values[i]
-      list << consolidated
-    end
-    @items = list.dup
-  end
-  protected :replace_column
-  
-  def validate_column(column)
-    column = column.to_sym
-    raise ArgumentError, "Must provide the name of an existing column.  Provided #{column.inspect}, needed to provide one of #{self.labels.inspect}" unless self.labels.include?(column)
-    column
-  end
-  protected :validate_column
-  
-  # Takes a block to evaluate on each row.  The row can be converted into
-  # an OpenStruct or a Hash for easier filter methods. Note, don't try this
-  # with a hash or open struct unless you have facets available.
-  def filter!(as=Array, &block)
-    as = infer_class(as)
-    items = []
-    self.items.each do |row|
-      value = block.call(cast_row(row, as))
-      items << row if value
-    end
-    @items = items.dup
-    self
-  end
-  
-  def filter(as=Array, &block)
-    new_data_frame = self.clone
-    new_data_frame.filter!(as, &block)
-  end
-  
-  def infer_class(obj)
-    obj = obj.to_s.classify.constantize if obj.is_a?(Symbol)
-    obj = obj.classify.constantize if obj.is_a?(String)
-    obj
-  end
-  protected :infer_class
-  
-  def cast_row(row, as)
-    if as == Hash
-      obj = {}
-      self.labels.each_with_index do |label, i|
-        obj[label] = row[i]
-      end
-      obj
-    elsif as == OpenStruct
-      obj = OpenStruct.new
-      self.labels.each_with_index do |label, i|
-        obj.table[label] = row[i]
-      end
-      obj
-    elsif as == Array
-      row
-    else
-      as.new(*row)
-    end
-  end
-  protected :cast_row
-  
-  # Creates a new data frame, only with the specified columns.
-  def subset_from_columns(*cols)
-    new_labels = self.labels.inject([]) do |list, label|
-      list << label if cols.include?(label)
-      list
-    end
-    new_data_frame = DataFrame.new(*self.labels)
-    new_data_frame.import(self.items)
-    self.labels.each do |label|
-      new_data_frame.drop!(label) unless new_labels.include?(label)
-    end
-    new_data_frame
-  end
-  
-  # A weird name.  This creates a column for every category in a column
-  # and marks each row by its value 
-  def j_binary_ize!(*columns)
-    # Allows to mix a hash with the columns.
-    options = columns.find_all {|e| e.is_a?(Hash)}.inject({}) {|h, e| h.merge!(e)}
-    columns.delete_if {|e| e.is_a?(Hash)}
     
-    # Generates new columns
-    columns.each do |col|
-      values = render_column(col.to_underscore_sym)
-      values.categories.each do |category|
-        full_name = (col.to_s + "_" + category.to_s).to_sym
-        if options[:allow_overlap]
-          category_map = values.inject([]) do |list, e|
-            list << values.all_categories(e)
-          end
-          self.append!(full_name, category_map.map{|e| e.include?(category)})
-        else
-          self.append!(full_name, values.category_map.map{|e| e == category})
+    def infer_class(obj)
+      obj = obj.to_s.classify.constantize if obj.is_a?(Symbol)
+      obj = obj.classify.constantize if obj.is_a?(String)
+      obj
+    end
+    
+    def cast_row(row, as)
+      if as == Hash
+        obj = {}
+        self.labels.each_with_index do |label, i|
+          obj[label] = row[i]
         end
+        obj
+      elsif as == OpenStruct
+        obj = OpenStruct.new
+        self.labels.each_with_index do |label, i|
+          obj.table[label] = row[i]
+        end
+        obj
+      elsif as == Array
+        row
+      else
+        as.new(*row)
       end
     end
-  end
-  
-  # Adds a column, numerical_column_name that shows the same data as a
-  # nominal value, but as a number. 
-  def numericize!(*columns)
-    columns.each do |col|
-      values = render_column(col.to_underscore_sym)
-      categories = values.categories
-      value_categories = values.map {|v| values.category(v)}
-      
-      i = 0
-      category_map = value_categories.uniq.inject({}) do |h, c|
-        h[c] = i
-        i += 1
-        h
-      end
-      
-      blank = Array.new(category_map.size, 0)
-      reverse_category_map = category_map.inject({}) {|h, e| h[e.last] = e.first; h}
-
-      new_values = values.inject([]) do |list, val|
-        a = blank.dup
-        a[category_map[values.category(val)]] = 1
-        list << a
-      end
-      
-      new_name = "numerical #{col.to_s}".to_underscore_sym
-      self.append!(new_name, new_values)
-    end
-  end
-
-  # Saves a data frame as CSV.  
-  # Examples:
-  # df.save('/tmp/some_filename.csv')
-  # df.save('/tmp/some_filename.csv', :include_header => false) # No header information is saved
-  # df.save('/tmp/some_filename.csv', :only => [:list, :of, :columns])
-  # df.save('/tmp/some_filename.csv', :subset => [:list, :of, :columns])
-  # df.save('/tmp/some_filename.csv', 
-  #   :filter => {:column_name => :category_value, 
-  #     :another_column_name => (range..values)}) # Filter by category
-  def save(filename, opts={})
-    
-    df = self
-    df = df.subset_from_columns(*Array(opts[:only])) if opts[:only]
-    df = df.subset_from_columns(*Array(opts[:subset])) if opts[:subset]
-    df = df.filter_by_category(opts[:filter]) if opts[:filter]
-    df = df.filter_by_category(opts[:filter_by_category]) if opts[:filter_by_category]
-    
-    File.open(filename, "w") { |f| f.write df.to_csv(opts.fetch(:include_header, true)) }
-  end
-  
-  # Adds a unique column to the table
-  def append!(column_name, value=nil)
-    raise ArgumentError, "Can't have duplicate column names" if self.labels.include?(column_name)
-    self.labels << column_name.to_underscore_sym
-    if value.is_a?(Array)
-      self.items.each_with_index do |item, i|
-        item << value[i]
-      end
-    else
-      self.items.each do |item|
-        item << value
-      end
-    end
-    # Because we are tainting the sub arrays, the TaintableArray doesn't know it's been changed.
-    self.items.taint
-  end
-  
-  def filter_by_category(hash)
-    new_data_frame = self.dup
-    hash.each do |key, value|
-      key = key.to_underscore_sym
-      next unless self.labels.include?(key)
-      value = [value] unless value.is_a?(Array) or value.is_a?(Range)
-      new_data_frame.filter!(:hash) {|row| value.include?(row[key])}
-    end
-    new_data_frame
-  end
-
-  def filter_by_category!(hash)
-    hash.each do |key, value|
-      key = key.to_underscore_sym
-      next unless self.labels.include?(key)
-      value = [value] unless value.is_a?(Array) or value.is_a?(Range)
-      self.filter!(:hash) {|row| value.include?(row[key])}
-    end
-  end
-    
 end

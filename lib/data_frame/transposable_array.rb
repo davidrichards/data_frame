@@ -1,5 +1,5 @@
 # The only trick in this array is that it's transpose is memoized until
-# it is tainted.  This will reduce computations elegantly. 
+# it is tainted.  This should reduce computations elegantly. 
 class TransposableArray < CallbackArray
 
   after_taint :clear_cache

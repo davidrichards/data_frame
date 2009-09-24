@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__), "/../spec_helper")
+require 'data_frame/arff'
 
 describe "ARFF" do
   before do
