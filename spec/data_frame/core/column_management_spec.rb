@@ -94,4 +94,20 @@ describe "Column Management" do
     end
   end
   
+  context "duplicate!" do
+    it "should be able to duplicate a column" do
+      @df.duplicate!(:these)
+      @df.these1.should eql(@df.these)
+    end
+    
+    it "should use unique names for the duplicate column" do
+      @df.duplicate!(:these)
+      @df.duplicate!(:these)
+      @df.duplicate!(:these)
+      @df.these3.should eql(@df.these2)
+      @df.these2.should eql(@df.these1)
+      @df.these1.should eql(@df.these)
+    end
+  end
+  
 end

@@ -94,6 +94,19 @@ module DF #:nodoc:
       new_data_frame
     end
     
+    # Duplicates a column.  This is useful when creating a related column, such as values by category.
+    def duplicate!(column_name)
+      return false unless self.labels.include?(column_name)
+      i = 1
+      i += 1 while self.labels.include?(new_column_name(column_name, i))
+      self.append!(new_column_name(column_name, i), self.render_column(column_name))
+    end
+    
+    def new_column_name(column_name, i)
+      (column_name.to_s + i.to_s).to_sym
+    end
+    protected :new_column_name
+    
   end
 end
 
