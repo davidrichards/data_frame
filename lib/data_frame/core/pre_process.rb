@@ -53,6 +53,14 @@ module DF #:nodoc:
       end
     end
     
+    def categorize!(*cs)
+      store_range_hashes
+      cs.each do |column|
+        self.replace!(column, category_map_from_stored_range_hash(column))
+      end
+      restore_range_hashes
+    end
+    
   end
 end
 

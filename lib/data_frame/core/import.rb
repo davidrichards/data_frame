@@ -95,6 +95,7 @@ module DF #:nodoc:
           if self.labels.size > 1 and rows.dimensions == 1
             self.add_item(rows)
           else
+            # self.items = self.items + rows
             rows.each do |row|
               self.add_item(row)
             end

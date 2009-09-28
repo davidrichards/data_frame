@@ -68,4 +68,36 @@ describe "PreProcess" do
     
   end
   
+  context "categorize!" do
+    before do
+      @df = DataFrame.new(:observations)
+      @df.import([1,2,3,4,5,4,3,2,1].map{|e| Array(e)})
+      @df.observations.add_category(0) {|e| e <= 3}
+      @df.observations.add_category(1) {|e| e > 3}
+    end
+    
+    it "should be able to replace a column with its category values" do
+      @df.categorize!(:observations)
+      @df.observations.should eql([0,0,0,1,1,1,0,0,0])
+    end
+    
+    it "should be able to replace more than one column at a time" do
+      @df.duplicate!(:observations)
+      @df.observations.add_category(0) {|e| e <= 3}
+      @df.observations.add_category(1) {|e| e > 3}
+      @df.observations1.add_category(:small) {|e| e <= 3}
+      @df.observations1.add_category(:large) {|e| e > 3}
+      @df.categorize!(:observations, :observations1)
+      @df.observations.should eql([0,0,0,1,1,1,0,0,0])
+      @df.observations1.should eql([:small,:small,:small,:large,:large,:large,:small,:small,:small])
+    end
+    
+    it "should be able to categorize a column that doesn't have a range_hash setup" do
+      @df = DataFrame.new(:observations)
+      @df.import([1,2,3,4,5,4,3,2,1].map{|e| Array(e)})
+      @df.observations.range_hash.should be_nil
+      lambda{@df.categorize!(:observations)}.should_not raise_error
+      @df.observations.should eql([1,2,3,4,5,4,3,2,1])
+    end
+  end
 end

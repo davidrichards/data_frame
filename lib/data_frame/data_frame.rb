@@ -13,7 +13,7 @@ class DataFrame
   alias :variables :labels
   
   # The items stored in the frame
-  attr_reader :items
+  attr_accessor :items
   
   # An optional name, useful for arff files
   attr_accessor :name

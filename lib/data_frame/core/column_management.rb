@@ -32,6 +32,7 @@ module DF #:nodoc:
           item << value
         end
       end
+      self.columns(true)
       # Because we are tainting the sub arrays, the TaintableArray doesn't know it's been changed.
       self.items.taint
     end
@@ -50,15 +51,21 @@ module DF #:nodoc:
     # It is helpful to have the values the same size as the rest of the data
     # frame. 
     def replace_column!(column, values)
+      store_range_hashes
       column = validate_column(column)
       index = self.labels.index(column)
-      list = []
-      self.items.each_with_index do |item, i|
-        consolidated = item
-        consolidated[index] = values[i]
-        list << consolidated
+      @items.each_with_index do |item, i|
+        item[index] = values[i]
       end
-      @items = list.dup
+      
+      # Make sure we recalculate things after changing a column
+      self.items.taint
+      @columns = nil
+      self.columns
+      restore_range_hashes
+      
+      # Return the items
+      @items
     end
 
     # Drop one or more columns
@@ -94,18 +101,42 @@ module DF #:nodoc:
       new_data_frame
     end
     
-    # Duplicates a column.  This is useful when creating a related column, such as values by category.
+    # Duplicates a column, the values only.  This is useful when creating a related column, such as values by category.
     def duplicate!(column_name)
       return false unless self.labels.include?(column_name)
       i = 1
       i += 1 while self.labels.include?(new_column_name(column_name, i))
-      self.append!(new_column_name(column_name, i), self.render_column(column_name))
+      self.append!(new_column_name(column_name, i), self.render_column(column_name).dup)
     end
     
     def new_column_name(column_name, i)
       (column_name.to_s + i.to_s).to_sym
     end
     protected :new_column_name
+    
+    protected
+      def store_range_hashes
+        @stored_range_hashes = self.labels.inject({}) do |h, label|
+          h[label] = self.render_column(label).range_hash
+          h
+        end
+        @stored_range_hashes = nil if @stored_range_hashes.all? {|k, v| v.nil?}
+      end
+
+      def restore_range_hashes
+        return false unless @stored_range_hashes
+        @stored_range_hashes.each do |label, range_hash|
+          self.render_column(label).set_categories(range_hash) if range_hash
+        end
+        true
+      end
+      
+      def category_map_from_stored_range_hash(column)
+        self.render_column(column).set_categories(@stored_range_hashes[column]) if 
+          @stored_range_hashes and @stored_range_hashes.keys.include?(column)
+        self.render_column(column).category_map.dup
+      end
+    
     
   end
 end
