@@ -48,4 +48,25 @@ describe "Training" do
   it "should have a default proportion of 80%" do
     @df.training_set.size.should eql(80)
   end
+  
+  it "should offer the test_set, all items except those in the training set" do
+    @df.test_set.should eql(@df.items.exclusive_not(@df.training_set))
+  end
+  
+  it "should reset the test set when the training set is reset" do
+    @df.training_set(:n => 2)
+    @df.test_set.size.should eql(98)
+    @df.test_set.size.should eql(98)
+    @df.training_set(:n => 1, :reset => true)
+    @df.test_set.size.should eql(99)
+  end
+  
+  it "should not reset the training set when the test set is reset" do
+    hold = @df.training_set.dup
+    @df.training_set.should eql(hold)
+    @df.test_set
+    @df.test_set(:reset => true)
+    @df.training_set.should eql(hold)
+  end
+  
 end

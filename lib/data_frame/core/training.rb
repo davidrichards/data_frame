@@ -6,7 +6,10 @@ module Training #:nodoc:
   # Get the number of items to choose, n, or a proportion of the items
   # Store and return n random items
   def training_set(opts={})
-    @training_set = nil if opts[:reset]
+    if opts[:reset]
+      @training_set = nil 
+      @test_set = nil
+    end
     return @training_set if @training_set
     
     items_size = self.items.size
@@ -22,6 +25,13 @@ module Training #:nodoc:
       @training_set.uniq!
     end
     @training_set
+  end
+  
+  
+  def test_set(opts={})
+    @test_set = nil if opts[:reset]
+    return @test_set if @test_set
+    @test_set = self.items.exclusive_not(self.training_set)
   end
   
   protected
