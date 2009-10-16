@@ -21,7 +21,7 @@ describe DataFrame, "model" do
   
   it "should be able to define a model with a range of values" do
     @df.model(:a12) do |m|
-      m.a (1..2)
+      m.a(1..2)
     end
     @df.models.a12.a.should eql([1,2])
   end

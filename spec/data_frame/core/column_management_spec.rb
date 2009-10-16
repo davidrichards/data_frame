@@ -39,6 +39,12 @@ describe "Column Management" do
       @df.rename!(:new_name, :these)
       @df.labels.should eql([:new_name, :are, :the, :labels])
     end
+    
+    it "should be able to use the new column name with dot notation" do
+      v = @df.these.dup
+      @df.rename!(:new_name, :these)
+      @df.new_name.should eql(v)
+    end
   end
   
   context "drop!" do
@@ -108,6 +114,30 @@ describe "Column Management" do
       @df.these2.should eql(@df.these1)
       @df.these1.should eql(@df.these)
     end
+    
+    it "should reset the labels list when a column is duplicated" do
+      @df.duplicate!(:these)
+      @df.labels.should be_include(:these1)
+    end
+    
+    it "should return true, rather than the whole data set" do
+      @df.duplicate!(:these).should eql(true)
+    end
+    
+    it "should be able to name the new column" do
+      @df.duplicate!(:these, :those)
+      @df.these.should eql(@df.those)
+      @df.labels.should_not be_include(:these1)
+    end
+    
+    # it "should duplicate categories" do
+    #   @df.import([1,1,1,1])
+    #   @df.these.add_category(0) {|e| e < 5}
+    #   @df.these.add_category(1) {|e| e >= 5}
+    #   @df.these.categories.should eql([0,1])
+    #   @df.duplicate!(:these)
+    #   @df.these1.categories.should eql([0,1])
+    # end
   end
   
 end

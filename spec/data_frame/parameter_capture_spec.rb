@@ -19,7 +19,7 @@ describe ParameterCapture do
   
   it "should be able to capture a range as a parameter, meaning a continuous-or-condition" do
     pc = ParameterCapture.new do |p|
-      p.a (1..2)
+      p.a(1..2)
     end
     pc.parameters.a.should eql((1..2))
   end

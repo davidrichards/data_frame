@@ -102,11 +102,15 @@ module DF #:nodoc:
     end
     
     # Duplicates a column, the values only.  This is useful when creating a related column, such as values by category.
-    def duplicate!(column_name)
+    def duplicate!(column_name, new_name=nil)
       return false unless self.labels.include?(column_name)
-      i = 1
-      i += 1 while self.labels.include?(new_column_name(column_name, i))
-      self.append!(new_column_name(column_name, i), self.render_column(column_name).dup)
+      unless new_name
+        i = 1
+        i += 1 while self.labels.include?(new_column_name(column_name, i))
+        new_name = new_column_name(column_name, i)
+      end
+      self.append!(new_name, self.render_column(column_name).dup)
+      true
     end
     
     def new_column_name(column_name, i)
